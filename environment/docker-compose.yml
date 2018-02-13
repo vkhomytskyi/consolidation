@@ -6,7 +6,16 @@ services:
       - '9200:9200'
       - '9300:9300'
     environment:
-      ES_JAVA_OPTS: '-Xms2g -Xmx2g'
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    networks:
+      - esnet
+  elasticsearch2:
+    image: 'docker.elastic.co/elasticsearch/elasticsearch:6.2.1'
+    ports:
+      - '9201:9200'
+    environment:
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch"
     networks:
       - esnet
   kibana:
@@ -15,6 +24,7 @@ services:
       ELASTICSEARCH_URL: 'http://elasticsearch:9200'
     depends_on:
       - elasticsearch
+      - elasticsearch2
     ports:
       - '5601:5601'
     networks:
