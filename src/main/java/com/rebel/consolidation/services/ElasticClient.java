@@ -1,13 +1,33 @@
 package com.rebel.consolidation.services;
 
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import org.apache.http.HttpHost;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.rebel.consolidation.util.JsonUtils.fromJson;
+import static com.rebel.consolidation.util.JsonUtils.toJson;
 
 public class ElasticClient implements Closeable {
+
+	private final Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
 	private RestHighLevelClient client;
 
@@ -22,6 +42,58 @@ public class ElasticClient implements Closeable {
 						new HttpHost("localhost", 9201, "http")
 				)
 		);
+	}
+
+	public <T> void indexDocument(T document, String index, String type) {
+		try {
+			IndexRequest indexRequest = new IndexRequest(index, type);
+			indexRequest.source(toJson(document).encode(), XContentType.JSON);
+			client.index(indexRequest);
+		} catch (Exception e) {
+			logger.error("Index error", e);
+		}
+	}
+
+	public void deleteIndex(String index) {
+		try {
+			DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(index);
+			client.indices().delete(deleteIndexRequest);
+		} catch (Exception e) {
+			logger.error("Delete index error", e);
+		}
+	}
+
+	public void createIndex(String index) {
+		try {
+			CreateIndexRequest createIndexRequest = new CreateIndexRequest(index);
+			client.indices().create(createIndexRequest);
+		} catch (Exception e) {
+			logger.error("Create index error", e);
+		}
+	}
+
+	public <T> List<T> search(String index, String type, Class<T> clazz) {
+		SearchRequest searchRequest = new SearchRequest(index)
+				.types(type)
+				.searchType(SearchType.DFS_QUERY_THEN_FETCH);
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+				.query(QueryBuilders.matchAllQuery());
+		searchRequest.source(searchSourceBuilder);
+
+		List<T> result = new ArrayList<>();
+
+		try {
+			SearchResponse searchResponse = client.search(searchRequest);
+			SearchHits hits = searchResponse.getHits();
+
+			if (hits.totalHits > 0)
+				for (SearchHit hit : hits.getHits())
+					result.add(fromJson(hit.getSourceAsString(), clazz));
+		} catch (Exception e) {
+			logger.error("Search error", e);
+		}
+
+		return result;
 	}
 
 	@Override
