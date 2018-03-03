@@ -1,6 +1,7 @@
 package com.rebel.consolidation.test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TestDocumentGenerator {
@@ -23,6 +24,8 @@ public class TestDocumentGenerator {
 
 		for (int i = 0; i < count - valid; i++)
 			result.add(new TestDocument(nonValidText, source));
+
+		Collections.shuffle(result);
 
 		return result;
 	}

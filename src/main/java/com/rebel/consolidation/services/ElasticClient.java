@@ -93,24 +93,26 @@ public class ElasticClient implements Closeable {
 		}
 	}
 
-	public <T> List<T> search(String index, String type, QueryBuilder queryBuilder, Class<T> clazz) {
+	public <T> List<T> search(String index, String type, QueryBuilder queryBuilder, int limit, Class<T> clazz) {
 		List<T> result = new ArrayList<>();
-			SearchResponse searchResponse = search(index, type, queryBuilder);;
+			SearchResponse searchResponse = search(index, type, queryBuilder, limit);
 			SearchHits hits = searchResponse.getHits();
-			if (hits.totalHits > 0)
+			if (hits.getHits().length > 0)
 				for (SearchHit hit : hits.getHits())
 					result.add(fromJson(hit.getSourceAsString(), clazz));
 
 		return result;
 	}
 
-	private SearchResponse search(String index, String type, QueryBuilder queryBuilder) {
+	private SearchResponse search(String index, String type, QueryBuilder queryBuilder, int limit) {
 		SearchRequest searchRequest = new SearchRequest(index)
 				.types(type)
 				.searchType(SearchType.DFS_QUERY_THEN_FETCH);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-				.query(queryBuilder);
+				.query(queryBuilder)
+				.size(limit);
 		searchRequest.source(searchSourceBuilder);
+		System.out.println(searchRequest.source().toString());
 
 		try {
 			return client.search(searchRequest);
@@ -120,9 +122,9 @@ public class ElasticClient implements Closeable {
 		}
 	}
 
-	public Long count(String index, String type, QueryBuilder queryBuilder) {
-			SearchResponse searchResponse = search(index, type, queryBuilder);
-			return searchResponse.getHits().totalHits;
+	public Integer count(String index, String type, QueryBuilder queryBuilder, int limit) {
+			SearchResponse searchResponse = search(index, type, queryBuilder, limit);
+			return searchResponse.getHits().getHits().length;
 	}
 
 	@Override
