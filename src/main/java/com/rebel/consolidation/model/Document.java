@@ -1,20 +1,21 @@
 package com.rebel.consolidation.model;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class Document {
+	public Long         id;
 	public String       title;
 	public String       text;
 	public List<String> keywords;
 	public String       source;
 	public String       author;
-	public LocalDate    publicationDate;
+	public Long         publicationDate;
 
 	@Override
 	public String toString() {
 		return "Document{" +
-				"title='" + title + '\'' +
+				"id='" + id + '\'' +
+				", title='" + title + '\'' +
 				", text='" + text + '\'' +
 				", keywords=" + keywords +
 				", source='" + source + '\'' +

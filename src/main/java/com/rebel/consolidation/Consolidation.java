@@ -2,15 +2,17 @@ package com.rebel.consolidation;
 
 import com.rebel.consolidation.model.DocumentQueryBuilder;
 import com.rebel.consolidation.services.ElasticClient;
+import com.rebel.consolidation.test.TestDocument;
 import com.rebel.consolidation.test.TestDocumentGenerator;
-import org.elasticsearch.index.query.QueryBuilder;
+
+import java.text.DecimalFormat;
+import java.util.Collection;
 
 public class Consolidation {
 
-	private String index = "documents";
-	private String type  = "document";
+	private final String type = "document";
 
-	private ElasticClient elasticClient;
+	private final ElasticClient elasticClient;
 
 	public Consolidation() {
 		this.elasticClient = new ElasticClient();
@@ -18,64 +20,81 @@ public class Consolidation {
 
 	public void run() {
 //		generateTestData();
-		quiality("source1");
-		quiality("source2");
-		quiality("source3");
+		quality("source1");
+		quality("source2");
+		quality("source3");
 	}
 
-	public void quiality(String source) {
-		double quality = 1D * elasticClient.count(index, type, queryBuilder(source, "interesting"), 10000) / elasticClient.count(index, type, queryBuilder(source, null), 1000);
-		System.out.println("Quality of " + source + ": " + quality * 100 + "%");
-	}
+	public void quality(String source) {
+		Long valid =
+				elasticClient.count(
+						source,
+						type,
+						DocumentQueryBuilder
+								.builder()
+								.text("interesting")
+								.limit(1000L)
+								.build()
+				);
 
-	public QueryBuilder queryBuilder(String source, String text) {
-		return DocumentQueryBuilder
-				.builder()
-				.text("KPI", "NTUU")
-				.source(source)
-				.text(text)
-				.build();
+		Long total =
+				elasticClient.count(
+						source,
+						type,
+						DocumentQueryBuilder
+								.builder()
+								.limit(1000L)
+								.build()
+				);
+
+		double quality = 100D * valid / total;
+		DecimalFormat numberFormat = new DecimalFormat("#.00");
+		System.out.println("Quality of " + source + ": " + numberFormat.format(quality) + "%");
 	}
 
 	public void generateTestData() {
-		elasticClient.deleteIndex(index);
-		elasticClient.createIndex(index);
+		String source1 = "source1";
+		String source2 = "source2";
+		String source3 = "source3";
 
-		elasticClient.bulkIndex(
+		generateTestData(
+				source1,
 				TestDocumentGenerator.generate(
 						10000,
-						"source1",
+						source1,
 						"some interesting info",
 						"some shitty info",
 						10
-				),
-				index,
-				type
+				)
 		);
 
-		elasticClient.bulkIndex(
+		generateTestData(
+				source2,
 				TestDocumentGenerator.generate(
 						10000,
-						"source2",
+						source2,
 						"some interesting info",
 						"some shitty info",
 						5
-				),
-				index,
-				type
+				)
 		);
 
-		elasticClient.bulkIndex(
+		generateTestData(
+				source3,
 				TestDocumentGenerator.generate(
 						10000,
-						"source3",
+						source3,
 						"some interesting info",
 						"some shitty info",
 						2
-				),
-				index,
-				type
+				)
 		);
+	}
+
+	public void generateTestData(String source, Collection<TestDocument> collection) {
+		elasticClient.deleteIndex(source);
+		elasticClient.createIndex(source);
+		elasticClient.bulkIndex(collection, source, type);
 	}
 
 	public static void main(String[] args) {

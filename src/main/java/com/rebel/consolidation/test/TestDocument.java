@@ -10,12 +10,12 @@ public class TestDocument extends Document {
 		this.title = "Test Document";
 		this.keywords = Arrays.asList("keyword1", "keyword2", "keyword3", "keyword4");
 		this.author = "Test Author";
-		this.publicationDate = LocalDate.now();
 	}
 
-	public TestDocument(String text, String source) {
+	public TestDocument(String text, String source, Long date) {
 		this();
 		this.text = text;
 		this.source = source;
+		this.publicationDate = date;
 	}
 }

@@ -1,25 +1,27 @@
 package com.rebel.consolidation.model;
 
+import com.rebel.consolidation.util.DateUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import static java.util.Objects.nonNull;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class DocumentQueryBuilder {
-	private String[]  titleTerms;
-	private String[]  textTerms;
-	private String[]  keywordTerms;
-	private String    source;
-	private String[]  authorTerms;
-	private LocalDate fromDate;
-	private LocalDate tillDate;
+	private String[] titleTerms;
+	private String[] textTerms;
+	private String[] keywordTerms;
+	private String   source;
+	private String[] authorTerms;
+	private Long     fromId = 0L;
+	private Long     toId;
+	private Long     fromDate;
+	private Long     tillDate;
 
 
 	private DocumentQueryBuilder() {
@@ -54,13 +56,24 @@ public class DocumentQueryBuilder {
 		return this;
 	}
 
+	public DocumentQueryBuilder limit(Long to) {
+		this.toId = to;
+		return this;
+	}
+
+	public DocumentQueryBuilder limit(Long from, Long to) {
+		this.fromId = from;
+		this.toId = to;
+		return this;
+	}
+
 	public DocumentQueryBuilder fromDate(LocalDate fromDate) {
-		this.fromDate = fromDate;
+		this.fromDate = DateUtils.toEpochMilli(fromDate);
 		return this;
 	}
 
 	public DocumentQueryBuilder tillDate(LocalDate tillDate) {
-		this.tillDate = tillDate;
+		this.tillDate = DateUtils.toEpochMilli(tillDate);
 		return this;
 	}
 
@@ -76,6 +89,25 @@ public class DocumentQueryBuilder {
 			queryBuilder.filter(termsQuery("keywords", keywordTerms));
 		if (nonNull(authorTerms))
 			queryBuilder.filter(termsQuery("author", authorTerms));
+
+		if (nonNull(fromId) || nonNull(toId)) {
+			RangeQueryBuilder rangeQuery = rangeQuery("id");
+			if (nonNull(fromId))
+				rangeQuery.from(fromId);
+			if (nonNull(toId))
+				rangeQuery.from(toId);
+			queryBuilder.filter(rangeQuery);
+		}
+
+		if (nonNull(fromDate) || nonNull(tillDate)) {
+			RangeQueryBuilder rangeQuery = rangeQuery("publicationDate");
+			if (nonNull(fromDate))
+				rangeQuery.from(fromDate);
+			if (nonNull(tillDate))
+				rangeQuery.from(tillDate);
+			queryBuilder.filter(rangeQuery);
+		}
+
 		return queryBuilder;
 	}
 }
