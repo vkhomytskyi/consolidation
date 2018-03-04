@@ -68,12 +68,20 @@ public class DocumentQueryBuilder {
 	}
 
 	public DocumentQueryBuilder fromDate(LocalDate fromDate) {
-		this.fromDate = DateUtils.toEpochMilli(fromDate);
-		return this;
+		return fromDate(DateUtils.toEpochMilli(fromDate));
 	}
 
 	public DocumentQueryBuilder tillDate(LocalDate tillDate) {
-		this.tillDate = DateUtils.toEpochMilli(tillDate);
+		return tillDate(DateUtils.toEpochMilli(tillDate));
+	}
+
+	public DocumentQueryBuilder fromDate(Long fromDate) {
+		this.fromDate = fromDate;
+		return this;
+	}
+
+	public DocumentQueryBuilder tillDate(Long tillDate) {
+		this.tillDate = tillDate;
 		return this;
 	}
 

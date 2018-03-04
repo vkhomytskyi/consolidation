@@ -10,8 +10,6 @@ import java.util.Collection;
 
 public class Consolidation {
 
-	private final String type = "document";
-
 	private final ElasticClient elasticClient;
 
 	public Consolidation() {
@@ -29,7 +27,6 @@ public class Consolidation {
 		Long valid =
 				elasticClient.count(
 						source,
-						type,
 						DocumentQueryBuilder
 								.builder()
 								.text("interesting")
@@ -40,7 +37,6 @@ public class Consolidation {
 		Long total =
 				elasticClient.count(
 						source,
-						type,
 						DocumentQueryBuilder
 								.builder()
 								.limit(1000L)
@@ -94,7 +90,7 @@ public class Consolidation {
 	public void generateTestData(String source, Collection<TestDocument> collection) {
 		elasticClient.deleteIndex(source);
 		elasticClient.createIndex(source);
-		elasticClient.bulkIndex(collection, source, type);
+		elasticClient.bulkIndex(collection, source);
 	}
 
 	public static void main(String[] args) {

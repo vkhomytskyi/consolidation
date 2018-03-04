@@ -17,8 +17,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -34,7 +32,10 @@ public class ElasticClient implements Closeable {
 
 	private final Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
+	private static final String type = "document";
+
 	private RestHighLevelClient client;
+
 
 	public ElasticClient() {
 		initConnection();
@@ -49,7 +50,7 @@ public class ElasticClient implements Closeable {
 		);
 	}
 
-	public <T extends Document> void index(T document, String index, String type) {
+	public <T extends Document> void index(T document, String index) {
 		try {
 			IndexRequest indexRequest = new IndexRequest(index, type, Long.toString(document.id));
 			indexRequest.source(toJson(document).encode(), XContentType.JSON);
@@ -59,7 +60,7 @@ public class ElasticClient implements Closeable {
 		}
 	}
 
-	public <T extends Document> void bulkIndex(Collection<T> documents, String index, String type) {
+	public <T extends Document> void bulkIndex(Collection<T> documents, String index) {
 		BulkRequest bulkRequest = new BulkRequest()
 				.add(
 						documents
@@ -95,18 +96,18 @@ public class ElasticClient implements Closeable {
 		}
 	}
 
-	public <T> List<T> search(String index, String type, QueryBuilder query, Class<T> clazz) {
+	public <T> List<T> search(String index, QueryBuilder query, Class<T> clazz) {
 		List<T> result = new ArrayList<>();
-			SearchResponse searchResponse = search(index, type, query);
-			SearchHits hits = searchResponse.getHits();
-			if (hits.getHits().length > 0)
-				for (SearchHit hit : hits.getHits())
-					result.add(fromJson(hit.getSourceAsString(), clazz));
+		SearchResponse searchResponse = search(index, query);
+		SearchHits hits = searchResponse.getHits();
+		if (hits.getHits().length > 0)
+			for (SearchHit hit : hits.getHits())
+				result.add(fromJson(hit.getSourceAsString(), clazz));
 
 		return result;
 	}
 
-	private SearchResponse search(String index, String type, QueryBuilder query) {
+	private SearchResponse search(String index, QueryBuilder query) {
 		SearchRequest searchRequest = new SearchRequest(index)
 				.types(type);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -121,9 +122,9 @@ public class ElasticClient implements Closeable {
 		}
 	}
 
-	public Long count(String index, String type, QueryBuilder query) {
-			SearchResponse searchResponse = search(index, type, query);
-			return searchResponse.getHits().totalHits;
+	public Long count(String index, QueryBuilder query) {
+		SearchResponse searchResponse = search(index, query);
+		return searchResponse.getHits().totalHits;
 	}
 
 	@Override
