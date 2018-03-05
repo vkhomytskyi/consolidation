@@ -2,6 +2,7 @@ package com.rebel.consolidation;
 
 import com.rebel.consolidation.model.DocumentQueryBuilder;
 import com.rebel.consolidation.services.ElasticClient;
+import com.rebel.consolidation.test.Sources;
 import com.rebel.consolidation.test.TestDocument;
 import com.rebel.consolidation.test.TestDocumentGenerator;
 
@@ -17,16 +18,15 @@ public class Consolidation {
 	}
 
 	public void run() {
-//		generateTestData();
-		quality("source1");
-		quality("source2");
-		quality("source3");
+		generateTestData();
+//		quality("source1");
+//		quality("source2");
+//		quality("source3");
 	}
 
 	public void quality(String source) {
 		Long valid =
 				elasticClient.count(
-						source,
 						DocumentQueryBuilder
 								.builder()
 								.text("interesting")
@@ -36,7 +36,6 @@ public class Consolidation {
 
 		Long total =
 				elasticClient.count(
-						source,
 						DocumentQueryBuilder
 								.builder()
 								.limit(1000L)
@@ -49,15 +48,15 @@ public class Consolidation {
 	}
 
 	public void generateTestData() {
-		String source1 = "source1";
-		String source2 = "source2";
-		String source3 = "source3";
+
+		elasticClient.deleteIndex("documents");
+		elasticClient.createIndex("documents");
 
 		generateTestData(
-				source1,
+				"documents",
 				TestDocumentGenerator.generate(
 						10000,
-						source1,
+						Sources.SCOPUS,
 						"some interesting info",
 						"some shitty info",
 						10
@@ -65,10 +64,10 @@ public class Consolidation {
 		);
 
 		generateTestData(
-				source2,
+				"documents",
 				TestDocumentGenerator.generate(
 						10000,
-						source2,
+						Sources.RINZ,
 						"some interesting info",
 						"some shitty info",
 						5
@@ -76,10 +75,10 @@ public class Consolidation {
 		);
 
 		generateTestData(
-				source3,
+				"documents",
 				TestDocumentGenerator.generate(
 						10000,
-						source3,
+						Sources.KPI,
 						"some interesting info",
 						"some shitty info",
 						2
@@ -87,10 +86,10 @@ public class Consolidation {
 		);
 	}
 
-	public void generateTestData(String source, Collection<TestDocument> collection) {
-		elasticClient.deleteIndex(source);
-		elasticClient.createIndex(source);
-		elasticClient.bulkIndex(collection, source);
+	public void generateTestData(String index, Collection<TestDocument> collection) {
+//		elasticClient.deleteIndex(source);
+//		elasticClient.createIndex(source);
+		elasticClient.bulkIndex(collection, index);
 	}
 
 	public static void main(String[] args) {

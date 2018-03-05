@@ -4,18 +4,22 @@ import com.rebel.consolidation.model.Document;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.List;
 
 public class TestDocument extends Document {
-	public TestDocument() {
-		this.title = "Test Document";
-		this.keywords = Arrays.asList("keyword1", "keyword2", "keyword3", "keyword4");
-		this.author = "Test Author";
-	}
-
-	public TestDocument(String text, String source, Long date) {
-		this();
+	public TestDocument(
+			String title,
+			String text,
+			String source,
+			String author,
+			Long publicationDate,
+			List<String> keywords
+	) {
+		this.title = title;
 		this.text = text;
 		this.source = source;
-		this.publicationDate = date;
+		this.author = author;
+		this.publicationDate = publicationDate;
+		this.keywords = keywords;
 	}
 }

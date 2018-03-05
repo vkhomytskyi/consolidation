@@ -1,6 +1,8 @@
 package com.rebel.consolidation.services;
 
 import com.rebel.consolidation.model.Document;
+import com.rebel.consolidation.model.SearchResult;
+import com.rebel.consolidation.test.Sources;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.http.HttpHost;
@@ -32,10 +34,10 @@ public class ElasticClient implements Closeable {
 
 	private final Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
-	private static final String type = "document";
+	private static final String type  = "document";
+	private static final String index = "documents";
 
 	private RestHighLevelClient client;
-
 
 	public ElasticClient() {
 		initConnection();
@@ -65,7 +67,7 @@ public class ElasticClient implements Closeable {
 				.add(
 						documents
 								.stream()
-								.map(d -> new IndexRequest(index, type, Long.toString(d.id))
+								.map(d -> new IndexRequest(index, type)
 										.source(toJson(d).encode(), XContentType.JSON)
 								)
 								.collect(toList())
@@ -96,23 +98,34 @@ public class ElasticClient implements Closeable {
 		}
 	}
 
-	public <T> List<T> search(String index, QueryBuilder query, Class<T> clazz) {
-		List<T> result = new ArrayList<>();
-		SearchResponse searchResponse = search(index, query);
+	public <T extends Document> SearchResult search(QueryBuilder query, Class<T> clazz) {
+		List<Document> result = new ArrayList<>();
+		SearchResponse searchResponse = search(query);
 		SearchHits hits = searchResponse.getHits();
 		if (hits.getHits().length > 0)
 			for (SearchHit hit : hits.getHits())
 				result.add(fromJson(hit.getSourceAsString(), clazz));
 
-		return result;
+		SearchResult searchResult = new SearchResult();
+		searchResult.totalCount = result.size();
+		searchResult.scopusCount = result.stream().filter(d -> Sources.SCOPUS.equals(d.source)).count();
+		searchResult.rinzCount = result.stream().filter(d -> Sources.RINZ.equals(d.source)).count();
+		searchResult.kpiCount = result.stream().filter(d -> Sources.KPI.equals(d.source)).count();
+		searchResult.documents = result;
+
+		return searchResult;
 	}
 
-	private SearchResponse search(String index, QueryBuilder query) {
+	private SearchResponse search(QueryBuilder query) {
 		SearchRequest searchRequest = new SearchRequest(index)
 				.types(type);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-				.query(query);
+				.query(query)
+				.size(10000)
+				.sort("id");
 		searchRequest.source(searchSourceBuilder);
+
+		logger.info("ES: {0}", searchSourceBuilder.toString());
 
 		try {
 			return client.search(searchRequest);
@@ -122,8 +135,8 @@ public class ElasticClient implements Closeable {
 		}
 	}
 
-	public Long count(String index, QueryBuilder query) {
-		SearchResponse searchResponse = search(index, query);
+	public Long count(QueryBuilder query) {
+		SearchResponse searchResponse = search(query);
 		return searchResponse.getHits().totalHits;
 	}
 

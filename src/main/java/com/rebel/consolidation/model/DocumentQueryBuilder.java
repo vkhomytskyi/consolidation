@@ -16,12 +16,12 @@ public class DocumentQueryBuilder {
 	private String[] titleTerms;
 	private String[] textTerms;
 	private String[] keywordTerms;
-	private String   source;
+	private String[] sources;
 	private String[] authorTerms;
-	private Long     fromId = 0L;
-	private Long     toId;
-	private Long     fromDate;
-	private Long     tillDate;
+	private Long fromId = 0L;
+	private Long toId;
+	private Long fromDate;
+	private Long tillDate;
 
 
 	private DocumentQueryBuilder() {
@@ -51,8 +51,8 @@ public class DocumentQueryBuilder {
 		return this;
 	}
 
-	public DocumentQueryBuilder source(String source) {
-		this.source = source;
+	public DocumentQueryBuilder source(String... sources) {
+		this.sources = sources;
 		return this;
 	}
 
@@ -87,8 +87,6 @@ public class DocumentQueryBuilder {
 
 	public QueryBuilder build() {
 		BoolQueryBuilder queryBuilder = boolQuery();
-		if (nonNull(source))
-			queryBuilder.filter(termsQuery("source", source));
 		if (nonNull(textTerms))
 			queryBuilder.filter(termsQuery("text", textTerms));
 		if (nonNull(titleTerms))
@@ -97,13 +95,15 @@ public class DocumentQueryBuilder {
 			queryBuilder.filter(termsQuery("keywords", keywordTerms));
 		if (nonNull(authorTerms))
 			queryBuilder.filter(termsQuery("author", authorTerms));
+		if (nonNull(sources))
+			queryBuilder.filter(termsQuery("source", sources));
 
 		if (nonNull(fromId) || nonNull(toId)) {
 			RangeQueryBuilder rangeQuery = rangeQuery("id");
 			if (nonNull(fromId))
 				rangeQuery.from(fromId);
 			if (nonNull(toId))
-				rangeQuery.from(toId);
+				rangeQuery.to(toId);
 			queryBuilder.filter(rangeQuery);
 		}
 
@@ -112,7 +112,7 @@ public class DocumentQueryBuilder {
 			if (nonNull(fromDate))
 				rangeQuery.from(fromDate);
 			if (nonNull(tillDate))
-				rangeQuery.from(tillDate);
+				rangeQuery.to(tillDate);
 			queryBuilder.filter(rangeQuery);
 		}
 
