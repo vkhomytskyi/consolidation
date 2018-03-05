@@ -2,8 +2,10 @@ package com.rebel.consolidation.handler;
 
 import com.rebel.consolidation.model.Document;
 import com.rebel.consolidation.model.DocumentQueryBuilder;
+import com.rebel.consolidation.model.SearchMemory;
 import com.rebel.consolidation.model.SearchResult;
 import com.rebel.consolidation.services.ElasticClient;
+import com.rebel.consolidation.services.MemoryService;
 import com.rebel.consolidation.util.JsonUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
@@ -20,10 +22,12 @@ import static java.util.Objects.isNull;
 public class SearchHandler implements Handler<RoutingContext> {
 
 	private final ElasticClient elasticClient;
+	private final MemoryService memoryService;
 	private final Logger logger = LoggerFactory.getLogger(SearchHandler.class);
 
-	public SearchHandler() {
+	public SearchHandler(MemoryService memoryService) {
 		this.elasticClient = new ElasticClient();
+		this.memoryService = memoryService;
 	}
 
 	@Override
@@ -43,7 +47,24 @@ public class SearchHandler implements Handler<RoutingContext> {
 				.limit(body.getLong("fromId"), body.getLong("toId"))
 				.build();
 
-		response(context, elasticClient.search(query, Document.class));
+		SearchResult result = elasticClient.search(query, Document.class);
+
+		saveMemory(body.getMap().toString(), result);
+
+		response(context, result);
+	}
+
+	private void saveMemory(String query, SearchResult result) {
+		memoryService.saveMemory(
+				query,
+				new SearchMemory(
+						result.totalCount,
+						result.scopusCount,
+						result.rinzCount,
+						result.kpiCount,
+						System.currentTimeMillis()
+				)
+		);
 	}
 
 	private void response(RoutingContext context, SearchResult searchResult) {

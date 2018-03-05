@@ -29,6 +29,10 @@ services:
       - '5601:5601'
     networks:
       - esnet
+  hazelcast:
+    image: 'hazelcast/hazelcast:latest'
+    ports:
+      - '5701:5701'
 networks:
   esnet:
     driver: bridge
