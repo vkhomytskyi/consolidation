@@ -1,8 +1,9 @@
 package com.rebel.consolidation;
 
-import com.rebel.consolidation.handler.MemoryHandler;
+import com.rebel.consolidation.handler.StatisticsHandler;
 import com.rebel.consolidation.handler.SearchHandler;
-import com.rebel.consolidation.services.MemoryService;
+import com.rebel.consolidation.services.RatioService;
+import com.rebel.consolidation.services.StatisticsService;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
@@ -24,10 +25,11 @@ public class ConsolidationVerticle extends AbstractVerticle {
 		);
 		router.post().handler(BodyHandler.create());
 
-		MemoryService memoryService = new MemoryService();
+		StatisticsService statisticsService = new StatisticsService();
+		RatioService ratioService = new RatioService(statisticsService);
 
-		router.post("/search").handler(new SearchHandler(memoryService));
-		router.get("/memories").handler(new MemoryHandler(memoryService));
+		router.post("/search").handler(new SearchHandler(statisticsService, ratioService));
+		router.get("/statistics").handler(new StatisticsHandler(statisticsService));
 
 		vertx.createHttpServer().requestHandler(router::accept).listen(8080);
 	}

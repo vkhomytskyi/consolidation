@@ -30,7 +30,6 @@ public class Consolidation {
 						DocumentQueryBuilder
 								.builder()
 								.text("interesting")
-								.limit(1000L)
 								.build()
 				);
 
@@ -38,7 +37,6 @@ public class Consolidation {
 				elasticClient.count(
 						DocumentQueryBuilder
 								.builder()
-								.limit(1000L)
 								.build()
 				);
 

@@ -1,27 +1,23 @@
 package com.rebel.consolidation.model;
 
-import com.rebel.consolidation.util.DateUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 
-import java.time.LocalDate;
+import java.util.Map;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 public class DocumentQueryBuilder {
-	private String[] titleTerms;
-	private String[] textTerms;
-	private String[] keywordTerms;
-	private String[] sources;
-	private String[] authorTerms;
-	private Long fromId = 0L;
-	private Long toId;
-	private Long fromDate;
-	private Long tillDate;
+	private String[]          titleTerms;
+	private String[]          textTerms;
+	private String[]          keywordTerms;
+	private Map<String, Long> sources;
+	private String[]          authorTerms;
+	private Long              fromDate;
+	private Long              tillDate;
 
 
 	private DocumentQueryBuilder() {
@@ -51,28 +47,9 @@ public class DocumentQueryBuilder {
 		return this;
 	}
 
-	public DocumentQueryBuilder source(String... sources) {
+	public DocumentQueryBuilder source(Map<String, Long> sources) {
 		this.sources = sources;
 		return this;
-	}
-
-	public DocumentQueryBuilder limit(Long to) {
-		this.toId = to;
-		return this;
-	}
-
-	public DocumentQueryBuilder limit(Long from, Long to) {
-		this.fromId = from;
-		this.toId = to;
-		return this;
-	}
-
-	public DocumentQueryBuilder fromDate(LocalDate fromDate) {
-		return fromDate(DateUtils.toEpochMilli(fromDate));
-	}
-
-	public DocumentQueryBuilder tillDate(LocalDate tillDate) {
-		return tillDate(DateUtils.toEpochMilli(tillDate));
 	}
 
 	public DocumentQueryBuilder fromDate(Long fromDate) {
@@ -86,6 +63,9 @@ public class DocumentQueryBuilder {
 	}
 
 	public QueryBuilder build() {
+		if (isNull(sources))
+			throw new UnsupportedOperationException("At least one source should be selected");
+
 		BoolQueryBuilder queryBuilder = boolQuery();
 		if (nonNull(textTerms))
 			queryBuilder.filter(termsQuery("text", textTerms));
@@ -95,18 +75,6 @@ public class DocumentQueryBuilder {
 			queryBuilder.filter(termsQuery("keywords", keywordTerms));
 		if (nonNull(authorTerms))
 			queryBuilder.filter(termsQuery("author", authorTerms));
-		if (nonNull(sources))
-			queryBuilder.filter(termsQuery("source", sources));
-
-		if (nonNull(fromId) || nonNull(toId)) {
-			RangeQueryBuilder rangeQuery = rangeQuery("id");
-			if (nonNull(fromId))
-				rangeQuery.from(fromId);
-			if (nonNull(toId))
-				rangeQuery.to(toId);
-			queryBuilder.filter(rangeQuery);
-		}
-
 		if (nonNull(fromDate) || nonNull(tillDate)) {
 			RangeQueryBuilder rangeQuery = rangeQuery("publicationDate");
 			if (nonNull(fromDate))
@@ -116,6 +84,43 @@ public class DocumentQueryBuilder {
 			queryBuilder.filter(rangeQuery);
 		}
 
-		return queryBuilder;
+		BoolQueryBuilder sourcesQuery = new BoolQueryBuilder();
+		for (Map.Entry<String, Long> source : sources.entrySet()) {
+			BoolQueryBuilder sourceQuery = new BoolQueryBuilder();
+			sourceQuery.filter(termQuery("source", source.getKey()))
+					.filter(rangeQuery("id").to(source.getValue()));
+			queryBuilder.filter().forEach(sourceQuery::filter);
+			sourcesQuery.should(sourceQuery);
+		}
+
+		return sourcesQuery;
+	}
+
+	public String[] titleTerms() {
+		return titleTerms;
+	}
+
+	public String[] textTerms() {
+		return textTerms;
+	}
+
+	public String[] keywordTerms() {
+		return keywordTerms;
+	}
+
+	public Map<String, Long> sources() {
+		return sources;
+	}
+
+	public String[] authorTerms() {
+		return authorTerms;
+	}
+
+	public Long fromDate() {
+		return fromDate;
+	}
+
+	public Long tillDate() {
+		return tillDate;
 	}
 }
