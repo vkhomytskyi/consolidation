@@ -28,7 +28,7 @@ public class TestDocumentGenerator {
 	) {
 		logger.info("Started generating for " + source);
 
-		AtomicLong counter = new AtomicLong();
+		AtomicLong counter = new AtomicLong(1);
 
 		if (percentage > 100 || percentage < 0)
 			throw new IllegalArgumentException("Wrong percentage value, must be < 100 && > 0");
@@ -37,13 +37,11 @@ public class TestDocumentGenerator {
 
 		int valid = count / 100 * percentage;
 
-		for (int i = 0; i < valid; i++) {
-			result.add(new TestDocument(FAKER.book().title(), randomText() + validText, source, FAKER.book().author(), randomDate(), randomKeywords()));
-		}
+		for (int i = 0; i < valid; i++)
+			result.add(document(validText, source));
 
-		for (int i = 0; i < count - valid; i++) {
-			result.add(new TestDocument(FAKER.book().title(), randomText() + nonValidText, source, FAKER.book().author(), randomDate(), randomKeywords()));
-		}
+		for (int i = 0; i < count - valid; i++)
+			result.add(document(nonValidText, source));
 
 		Collections.shuffle(result);
 
@@ -52,6 +50,10 @@ public class TestDocumentGenerator {
 		logger.info(source + " ready!");
 
 		return result;
+	}
+
+	private static TestDocument document(String text, String source) {
+		return new TestDocument(FAKER.book().title(), randomText() + text, source, FAKER.book().author(), randomDate(), randomKeywords());
 	}
 
 	private static long randomDate() {
@@ -68,6 +70,7 @@ public class TestDocumentGenerator {
 	}
 
 	private static String randomText() {
-		return FAKER.lorem().paragraph(5) + " ";
+		int size = ThreadLocalRandom.current().nextInt(7, 10);
+		return FAKER.lorem().paragraph(size) + " ";
 	}
 }

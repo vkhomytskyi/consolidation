@@ -1,10 +1,7 @@
-package com.rebel.consolidation;
+package com.rebel.consolidation.test;
 
 import com.rebel.consolidation.model.DocumentQueryBuilder;
 import com.rebel.consolidation.services.ElasticClient;
-import com.rebel.consolidation.test.Sources;
-import com.rebel.consolidation.test.TestDocument;
-import com.rebel.consolidation.test.TestDocumentGenerator;
 
 import java.text.DecimalFormat;
 import java.util.Collection;

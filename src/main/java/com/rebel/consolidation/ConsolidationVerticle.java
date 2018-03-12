@@ -29,7 +29,7 @@ public class ConsolidationVerticle extends AbstractVerticle {
 		RatioService ratioService = new RatioService(statisticsService);
 
 		router.post("/search").handler(new SearchHandler(statisticsService, ratioService));
-		router.get("/statistics").handler(new StatisticsHandler(statisticsService));
+		router.post("/statistics").handler(new StatisticsHandler(statisticsService));
 
 		vertx.createHttpServer().requestHandler(router::accept).listen(8080);
 	}

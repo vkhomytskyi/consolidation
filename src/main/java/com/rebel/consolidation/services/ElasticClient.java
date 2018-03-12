@@ -125,7 +125,7 @@ public class ElasticClient implements Closeable {
 				.sort("id");
 		searchRequest.source(searchSourceBuilder);
 
-		logger.info("ES: {0}", searchSourceBuilder.toString());
+//		logger.info("ES: {0}", searchSourceBuilder.toString());
 
 		try {
 			return client.search(searchRequest);

@@ -25,13 +25,11 @@ public class StatisticsService {
 	}
 
 	public void saveResult(String id, SearchStatistics searchMemory) {
-		System.out.println("Saving history : " + id + " " + searchMemory);
 		historyMap().put(id, searchMemory);
 	}
 
 	public SearchStatistics lastResult(String query) {
 		List<SearchStatistics> history = history(query);
-		System.out.println("History for: " + query + " " + history);
 		if (history.isEmpty())
 			return null;
 		else

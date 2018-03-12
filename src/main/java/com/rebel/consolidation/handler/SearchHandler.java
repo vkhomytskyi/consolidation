@@ -1,9 +1,6 @@
 package com.rebel.consolidation.handler;
 
-import com.rebel.consolidation.model.Document;
-import com.rebel.consolidation.model.DocumentQueryBuilder;
-import com.rebel.consolidation.model.SearchResult;
-import com.rebel.consolidation.model.SearchStatistics;
+import com.rebel.consolidation.model.*;
 import com.rebel.consolidation.services.ElasticClient;
 import com.rebel.consolidation.services.RatioService;
 import com.rebel.consolidation.services.StatisticsService;
@@ -49,6 +46,7 @@ public class SearchHandler implements Handler<RoutingContext> {
 		static final String FROM_DATE     = "fromDate";
 		static final String TILL_DATE     = "tillDate";
 		static final String LIMIT         = "limit";
+		static final String ITERATIONS    = "iterations";
 	}
 
 	@Override
@@ -58,28 +56,35 @@ public class SearchHandler implements Handler<RoutingContext> {
 //		logger.info("Request: {0}", body.encode());
 
 		Long limit = body.getLong(LIMIT, 1000L);
+		Long iterations = body.getLong(ITERATIONS, 1L);
 
 		if (!body.containsKey(SOURCE))
 			body.put(SOURCE, new JsonArray().add(Sources.SCOPUS).add(Sources.KPI).add(Sources.RINZ));
-		if (!body.containsKey(LIMIT))
-			body.put(LIMIT, limit);
+		if (body.containsKey(LIMIT))
+			body.remove(LIMIT);
+		if (body.containsKey(ITERATIONS))
+			body.remove(ITERATIONS);
 
-		DocumentQueryBuilder documentQueryBuilder = DocumentQueryBuilder.builder()
-				.title(mapToString(body, TITLE_TERMS))
-				.text(mapToString(body, TEXT_TERMS))
-				.source(mapSources(body, limit))
-				.keyword(mapToString(body, KEYWORD_TERMS))
-				.author(mapToString(body, AUTHOR_TERMS))
-				.fromDate(body.getLong(FROM_DATE))
-				.tillDate(body.getLong(TILL_DATE));
+		SearchResult result = null;
 
-		QueryBuilder query = documentQueryBuilder.build();
+		for (int i = 0; i < iterations; i++) {
+			DocumentQueryBuilder documentQueryBuilder = DocumentQueryBuilder.builder()
+					.title(mapToString(body, TITLE_TERMS))
+					.text(mapToString(body, TEXT_TERMS))
+					.source(mapSources(body, limit))
+					.keyword(mapToString(body, KEYWORD_TERMS))
+					.author(mapToString(body, AUTHOR_TERMS))
+					.fromDate(body.getLong(FROM_DATE))
+					.tillDate(body.getLong(TILL_DATE));
 
-		SearchResult result = elasticClient.search(query, Document.class);
+			QueryBuilder query = documentQueryBuilder.build();
 
-		enrichResult(result, documentQueryBuilder.sources(), limit);
+			result = elasticClient.search(query, Document.class);
 
-		saveResult(body.getMap().toString(), limit, documentQueryBuilder.sources(), result);
+			enrichResult(result, documentQueryBuilder.sources(), limit);
+
+			saveResult(body.getMap().toString(), limit, documentQueryBuilder.sources(), result);
+		}
 
 		response(context, result);
 	}
@@ -107,11 +112,9 @@ public class SearchHandler implements Handler<RoutingContext> {
 	}
 
 	private void enrichResult(SearchResult searchResult, Map<String, Long> requested, Long limit) {
-		System.out.println("Requested: " + requested);
-
-		searchResult.scopusRequested = requested.get(Sources.SCOPUS);
-		searchResult.kpiRequested = requested.get(Sources.KPI);
-		searchResult.rinzRequested = requested.get(Sources.RINZ);
+		searchResult.scopusRequested = requested.get(Sources.SCOPUS.toLowerCase());
+		searchResult.kpiRequested = requested.get(Sources.KPI.toLowerCase());
+		searchResult.rinzRequested = requested.get(Sources.RINZ.toLowerCase());
 		searchResult.totalRequested = limit;
 	}
 
@@ -132,12 +135,12 @@ public class SearchHandler implements Handler<RoutingContext> {
 		if (sources.length == 1)
 			return Collections.singletonMap(sources[0], limit);
 
-		Map<String, Long> ratios = ratioService.getRatios(body.getMap().toString());
+		Map<String, Double> ratios = ratioService.getRatios(body.getMap().toString(), RatioMethod.PROPORTIONAL);
 
 		logger.info("Ratios: " + ratios);
 
 		return Arrays
 				.stream(sources)
-				.collect(toMap(Function.identity(), s -> ratios.get(s) * limit / 100));
+				.collect(toMap(Function.identity(), s -> (long) (ratios.get(s) * limit)));
 	}
 }
