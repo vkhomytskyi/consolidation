@@ -1,6 +1,6 @@
 package com.rebel.consolidation.services;
 
-import com.rebel.consolidation.model.RatioMethod;
+import com.rebel.consolidation.model.Methods;
 import com.rebel.consolidation.model.SearchStatistics;
 import com.rebel.consolidation.test.Sources;
 import io.vertx.core.logging.Logger;
@@ -28,7 +28,7 @@ public class RatioService {
 		return map;
 	}
 
-	public Map<String, Double> getRatios(String query, RatioMethod method) {
+	public Map<String, Double> getRatios(String query, String method) {
 		SearchStatistics stats = statisticsService.lastResult(query);
 
 		if (isNull(stats))
@@ -37,11 +37,11 @@ public class RatioService {
 		return getRatios(stats, method);
 	}
 
-	private Map<String, Double> getRatios(SearchStatistics statistics, RatioMethod method) {
+	private Map<String, Double> getRatios(SearchStatistics statistics, String method) {
 		switch (method) {
-			case PROPORTIONAL:
+			case Methods.PROPORTIONAL:
 				return proportional(statistics);
-			case DUAL:
+			case Methods.DUAL:
 				return dual(statistics);
 			default:
 				return defaultMap();

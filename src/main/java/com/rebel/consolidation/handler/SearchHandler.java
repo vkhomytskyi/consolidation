@@ -135,7 +135,7 @@ public class SearchHandler implements Handler<RoutingContext> {
 		if (sources.length == 1)
 			return Collections.singletonMap(sources[0], limit);
 
-		Map<String, Double> ratios = ratioService.getRatios(body.getMap().toString(), RatioMethod.PROPORTIONAL);
+		Map<String, Double> ratios = ratioService.getRatios(body.getMap().toString(), Methods.PROPORTIONAL);
 
 		logger.info("Ratios: " + ratios);
 
